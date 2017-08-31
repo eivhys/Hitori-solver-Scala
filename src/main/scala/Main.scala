@@ -1,4 +1,4 @@
-object hitoriSolver extends App {
+/*object hitoriSolver extends App {
 
   //TODO: get puzzle from .txt file (to 1D array for fastest performance)
   //TODO: apply starting techniques
@@ -24,7 +24,7 @@ object hitoriSolver extends App {
 
     val newColors:Array[Colors.Value] = new Array[Colors.Value](m * n)
     for (e <- 0 until m*n) {
-      newColors(e) = Colors.White
+      newColors(e) = Colors.None
     }
     //Adjacent triples
     //Horizontal
@@ -68,6 +68,8 @@ object hitoriSolver extends App {
 
     //Pair induction
 
+    //White around all blacks
+
     newColors
 
   }
@@ -79,8 +81,8 @@ object hitoriSolver extends App {
     //Sees that there are no non-colored cells, all cells must be black or white
     for (e <- 0 until m*n) {
       if (colors(e) == Colors.None) {
-        println("Contains non-colored cells")
-        return false
+        //println("Contains non-colored cells")
+        //return false
       }
     }
 
@@ -108,22 +110,63 @@ object hitoriSolver extends App {
 
   }
 
-  def potentialMove (values:Array[Int], colors:Array[Colors.Value]): Array[Colors.Value] = {
+  def potentialMove (values:Array[Int], colors:Array[Colors.Value], index:Int): Array[Colors.Value] = {
+    val e = index
+    if (!isSolved(values, colors)) {
+      if (colors(e) != Colors.Black) {
+        for (i <- 0 until m) {
+          val x = i + (e / m) * m
+          if (values(e) == values(x) && e != x && colors(x) != Colors.Black) {
+            //decide between two
+            if (shouldSetBlack(values, colors, index)) {
+              colors(e) = Colors.Black
+              solve(values, colors, index + 1)
+            } else  {
+              colors(e) = Colors.White
+              solve(values, colors, index + 1)
+            }
+          }
+          val y = i * m + e % m
+          if (values(e) == values(y) && e != y && colors(y) != Colors.Black) {
+            if (shouldSetBlack(values, colors, index)) {
+              colors(e) = Colors.Black
+              solve(values, colors, index + 1)
+            } else  {
+              colors(e) = Colors.White
+              solve(values, colors, index + 1)
+            }
+          }
+        }
+      }
+    }
     colors
   }
 
-  def solve(values:Array[Int], colors:Array[Colors.Value]): Array[Colors.Value] = {
+  def shouldSetBlack(values:Array[Int], colors:Array[Colors.Value], index:Int): Boolean = {
+    if (colors(index) == Colors.White) {
+      false
+    }
+    for (e <- 0 until m) {
+      for (i <- 0 until n) {
+        if (values(index) == values(e + index / m) && values(index) == values(i * n + index % n)) {
+          if (colors(index) == Colors.None && colors(e + index / m) == Colors.None && colors(i * n + index % n) == Colors.None) {
+            true
+          } else false
+        } else false
+      }
+    }
+    false
+  }
+
+  def solve(values:Array[Int], colors:Array[Colors.Value], index:Int = 0): Array[Colors.Value] = {
     val newColors:Array[Colors.Value] = colors
 
     //Solves if not solved
     if (!isSolved(values, newColors)) {
-      //solve(values, newColors)
+      puzzlePrint(values, colors)
+      potentialMove(values, colors, index)
     }
-
-
-
     newColors
-
   }
 
   object Colors extends Enumeration { //Enum to distinguish cells' colors
@@ -133,7 +176,7 @@ object hitoriSolver extends App {
 
   val m, n = 5 //Dimensions of array (should be the same value)
 
-  val puzzleBoardValues:Array[Int] = Array(4, 1, 3, 1, 5, 5, 1, 2, 2, 1, 4, 3, 2, 4, 3, 3, 4, 4, 1, 3, 4, 4, 4, 5, 1) //Example puzzle
+  val puzzleBoardValues:Array[Int] = Array(1,2,2,4,4,1,1,3,2,5,5,5,2,1,4,4,5,2,3,4,1,3,4,5,1) //Example puzzle
 
   val puzzleBoardColors = applyStartingTechniques(puzzleBoardValues)
 
@@ -152,4 +195,4 @@ object hitoriSolver extends App {
 
 
 
-}
+}*/
