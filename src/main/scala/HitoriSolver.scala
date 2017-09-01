@@ -1,5 +1,7 @@
 import java.io.{File, PrintWriter}
 
+import scala.collection.mutable.ArrayBuffer
+
 object HitoriSolver {
 
   def loadPuzzle(filePath:String):Array[Array[Int]] = {
@@ -7,23 +9,23 @@ object HitoriSolver {
     val lines = scala.io.Source.fromFile(file).mkString.split("\n")
     val size = lines.length
 
-    var puzzle = Array.ofDim[Int](size, size)
+    var puzzle = new ArrayBuffer[Array[Int]]()
 
     for (line<-lines) {
-      var row = Array()
-      line.mkString.split("\\s").foreach{ x => row :+ x.toInt}
-      puzzle :+ row
+      var row = new ArrayBuffer[Int]()
+      line.mkString.split("\\s").foreach{ x => row += x.toInt}
+      puzzle += row.toArray
     }
 
-    puzzle
+    puzzle.toArray
   }
 
   def savePuzzle(filePath:String, puzzle:Array[Array[Int]]):Unit = {
     var outputFile = new PrintWriter(new File(filePath))
 
     for (row<-puzzle) {
-      var line = StringBuilder
-      row.foreach(x => line += x + " ")
+      var line = new StringBuilder()
+      row.foreach{x => line ++= x + " "}
       outputFile.println(line)
     }
 
@@ -56,7 +58,10 @@ object HitoriSolver {
   }
 
   def printBoard(puzzle:Array[Array[Int]]):Unit = {
-
+    for (line<-puzzle){
+      line.foreach(x => print(x + " "))
+      println("")
+    }
   }
   
   def main(args: Array[String]): Unit = {
@@ -73,6 +78,8 @@ object HitoriSolver {
     val board = Array.ofDim[Int](5, 5)
 
     val puzzle = loadPuzzle(args(0))
+
+    printBoard(puzzle)
 
     val size = board.length
 
