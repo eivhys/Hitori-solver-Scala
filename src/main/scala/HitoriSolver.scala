@@ -69,10 +69,10 @@ object HitoriSolver {
     /*
     * TODO Get board from file ✓
     * TODO Apply starting techniques ✓
-    * TODO Check if solved
+    * TODO Check if solved ✓
     * TODO Continously apply techniques
     * TODO Actually solve it (recursion with backtracking)
-    * TODO Save solution
+    * TODO Save solution ✓
     * */
 
     val board = Array.ofDim[Int](5, 5)
@@ -152,7 +152,7 @@ object HitoriSolver {
             }
           }
 
-          //White around all blacks
+          //White around all blacks (all whites needs a friend)
           for (x <- 0 until size) {
             for (y <- 0 until size) {
               if (newColors(x)(y) == black) {
@@ -171,6 +171,24 @@ object HitoriSolver {
               }
             }
           }
+        }
+        //Corner rule
+        val end = size - 1
+        //Top left
+        if (values(0)(0) == values(1)(0) && values(0)(0) == values(0)(1)) {
+          newColors(0)(0) = black
+        }
+        //Top right
+        if (values(end)(0) == values(end)(1) && values(end)(0) == values(end - 1)(0)) {
+          newColors(end)(0) = black
+        }
+        //Bottom left
+        if (values(0)(end) == values(1)(end) && values(0)(end) == values(0)(end - 1)) {
+          newColors(0)(end) = black
+        }
+        //Bottom right
+        if (values(end)(end) == values(end)(end - 1) && values(end)(end) == values(end - 1)(end)) {
+          newColors(end)(end) = black
         }
       }
       newColors
