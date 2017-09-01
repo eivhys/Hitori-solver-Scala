@@ -25,11 +25,19 @@ object HitoriSolver {
 
     for (row<-puzzle) {
       var line = new StringBuilder()
-      row.foreach{x => line ++= x + " "}
+      row.foreach{x => line ++= wOrB(x)}
       outputFile.println(line)
     }
 
     outputFile.close
+  }
+
+  def getColumn(puzzle:Array[Array[Int]], i:Int = -1):Array[Int] = {
+    var rows = new ArrayBuffer[Array[Int]]()
+
+    puzzle.foreach(arr => rows += arr)
+
+    rows.toArray
   }
 
   def isSolved(puzzleValues:Array[Array[Int]], puzzleColors:Array[Array[Int]]):Boolean = {
@@ -42,6 +50,10 @@ object HitoriSolver {
 
     // Rows and columns only have unique numbers
     // Find all values in a row/column and
+
+    // Rows
+
+    // Columns
 
 
     // No adjacent black fields
@@ -57,13 +69,23 @@ object HitoriSolver {
     true
   }
 
+  def floodFill(puzzle:Array[Array[Int]]):Array[Array[Int]] = {
+    // Select arbitrary starting point
+    // "Fill" current tile by popping of stack
+    // Add top, bottom, left, right tiles (only white) to stack for filling next
+    // Pop next and repeat
+    // Finally, compare filled tiles to puzzle tile count - blacks
+  }
+
+  val wOrB = (x:Int) => (if (x==0) "b " else "w ");
+
   def printBoard(puzzle:Array[Array[Int]]):Unit = {
     for (line<-puzzle){
-      line.foreach(x => print(x + " "))
+      line.foreach(x => print(x + wOrB(x)))
       println("")
     }
   }
-  
+
   def main(args: Array[String]): Unit = {
 
     /*
@@ -72,7 +94,7 @@ object HitoriSolver {
     * TODO Check if solved
     * TODO Continously apply techniques
     * TODO Actually solve it (recursion with backtracking)
-    * TODO Save solution
+    * TODO Save solution ✓
     * */
 
     val board = Array.ofDim[Int](5, 5)
