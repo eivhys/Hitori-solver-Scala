@@ -4,6 +4,12 @@ import scala.collection.mutable.ArrayBuffer
 
 object HitoriSolver {
 
+  val noColor = -1
+
+  val black = 0
+
+  val white = 1
+
   def loadPuzzle(filePath:String):Array[Array[Int]] = {
     val file = new File(filePath)
     val lines = scala.io.Source.fromFile(file).mkString.split("\n")
@@ -21,7 +27,7 @@ object HitoriSolver {
   }
 
   def savePuzzle(filePath:String, puzzle:Array[Array[Int]]):Unit = {
-    var outputFile = new PrintWriter(new File(filePath))
+    val outputFile = new PrintWriter(new File(filePath))
 
     for (row<-puzzle) {
       var line = new StringBuilder()
@@ -38,6 +44,25 @@ object HitoriSolver {
     puzzle.foreach(arr => rows += arr)
 
     rows.toArray
+  }
+
+  def uniqueNumbers(board:Array[Array[Int]], colors:Array[Array[Int]]): Boolean = {
+    for (x <- 0 until board.length) {
+      for (y <- 0 until board.length) {
+        val e = board(x)(y)
+        for (i <- 0 until board.length) {
+          val e2 = board(i)(y)
+          val e3 = board(x)(i)
+          if (e == e2 && e == white && e2 == white) {
+            return false
+          }
+          if (e == e3 && e == white && e3 == white) {
+            return false
+          }
+        }
+      }
+    }
+    true
   }
 
   def isSolved(puzzleValues:Array[Array[Int]], puzzleColors:Array[Array[Int]]):Boolean = {
