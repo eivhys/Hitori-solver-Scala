@@ -1,5 +1,7 @@
 import java.io.{File, PrintWriter}
 
+import scala.annotation.tailrec
+import scala.collection.immutable.Stack
 import scala.collection.mutable.ArrayBuffer
 
 object HitoriSolver {
@@ -32,13 +34,14 @@ object HitoriSolver {
     outputFile.close
   }
 
+  /*
   def getColumn(puzzle:Array[Array[Int]], i:Int = -1):Array[Int] = {
     var rows = new ArrayBuffer[Array[Int]]()
 
     puzzle.foreach(arr => rows += arr)
 
     rows.toArray
-  }
+  }*/
 
   def isSolved(puzzleValues:Array[Array[Int]], puzzleColors:Array[Array[Int]]):Boolean = {
     /*
@@ -55,33 +58,109 @@ object HitoriSolver {
 
     // Columns
 
-
     // No adjacent black fields
 
-    //horizontal
-    //puzzleColors
-    // vertical
-    //puzzleColors.
 
-    // All white fields are connected continuously
-    // Flood fill all white fields starting from an arbitrary white, when done, check if there any more whites left
 
-    true
+
+
+    floodFillCheck(puzzleColors)
   }
 
-  def floodFill(puzzle:Array[Array[Int]]):Array[Array[Int]] = {
-    // Select arbitrary starting point
-    // "Fill" current tile by popping of stack
-    // Add top, bottom, left, right tiles (only white) to stack for filling next
-    // Pop next and repeat
-    // Finally, compare filled tiles to puzzle tile count - blacks
+  /**
+    * Recursively checks if a puzzle has interconnected white tiles, black tiles are ignored.
+    *
+    * @param puzzleColors 2D array of tiles containing -1, 0, 1 color mappings
+    * @return True if the puzzle has interconnected white tiles, false otherwise
+    */
+  def floodFillCheck(puzzleColors:Array[Array[Int]]):Boolean = {
+    val size = puzzleColors.length
+
+    /*
+    // Flatten 2D puzzle to a 1D array
+    val puzzle1D = puzzleColors.flatten
+    // Consider all black tiles as checked tiles
+    val checkedTiles = Array.tabulate[Boolean](size, size)((y,x) => (puzzle1D(index(x, y, size)) == 0))
+    printBoardBool(checkedTiles, "checkedTiles")
+    */
+
+    val checked = for (tile <- puzzleColors.flatten) yield tile == 0
+
+    println("Pre flood fill checked: " + checked.length)
+    println("Pre flood fill whites: " + checked.count(x => !x))
+    println("Pre flood fill blacks: " + checked.count(x => x))
+
+    // Find the first white tile
+    val index = checked.indexWhere(x => !x)
+    val first = if (index != -1 ) index :: List[Int]() else List[Int]()
+
+    @tailrec
+    def floodFill(checkedTiles:Array[Boolean], next:List[Int], dir:Int, iterations:Int = 0): Array[Boolean] = {
+      next match {
+        case Nil => checkedTiles
+        case index :: tail => {
+          val iter = if (checkedTiles(index)) iterations + 1 else 0
+
+          if (iter > 4)
+            return checkedTiles
+
+          checkedTiles(index) = true
+
+          println("Checked: " + index + " | isChecked: " + checkedTiles(index) + " | dir: " + dir)
+
+          dir match {
+            case 0 => {
+              val up = index - size
+              val next = if (up > 0 && !checkedTiles(up)) up :: tail else index :: tail
+              floodFill(checkedTiles, next, 1, iter)
+            }
+            case 1 => {
+              val right = index + 1
+              val next = if (right < checkedTiles.length && !checkedTiles(right)) right :: tail else index :: tail
+              floodFill(checkedTiles, next, 2, iter)
+            }
+            case 2 => {
+              val down = index + size
+              val next = if (down < checkedTiles.length && !checkedTiles(down)) down :: tail else index :: tail
+              floodFill(checkedTiles, next, 3, iter)
+            }
+            case 3 => {
+              val left = index - 1
+              val next = if (left > 0 && !checkedTiles(left)) left :: tail else index :: tail
+              floodFill(checkedTiles, next, 0, iter)
+            }
+            case _ => floodFill(checkedTiles, tail, 0)
+          }
+        }
+      }
+    }
+
+    !floodFill(checked, first, 0).contains(false)
   }
 
-  val wOrB = (x:Int) => (if (x==0) "b " else "w ");
+  // val performs better than def when the method is called multiple times
+  val xIndex = (i:Int, size:Int) => i % size
+  val yIndex = (i:Int, size:Int) => i / size    // Works because of integer division, alternative: (i - (i % size)) / size
+  val index = (x:Int, y:Int, size:Int) => x + (y * size)
 
-  def printBoard(puzzle:Array[Array[Int]]):Unit = {
+  val wOrB = (x:Int) => (if (x == 0) "b " else "w ");
+
+  def printBoard(puzzle:Array[Array[Int]], headline:String=""):Unit = {
+    if (!headline.isEmpty)
+      println("-- " + headline + " --")
+
     for (line<-puzzle){
       line.foreach(x => print(x + wOrB(x)))
+      println("")
+    }
+  }
+
+  def printBoardBool(puzzle:Array[Array[Boolean]], headline:String=""):Unit = {
+    if (!headline.isEmpty)
+      println("-- " + headline + " --")
+
+    for (line<-puzzle){
+      line.foreach(x => print(wOrB(if (x) 1 else 0)))
       println("")
     }
   }
@@ -92,7 +171,7 @@ object HitoriSolver {
     * TODO Get board from file ✓
     * TODO Apply starting techniques ✓
     * TODO Check if solved ✓
-    * TODO Continously apply techniques
+    * TODO Continuously apply techniques
     * TODO Actually solve it (recursion with backtracking)
     * TODO Save solution ✓
     * */
@@ -100,8 +179,13 @@ object HitoriSolver {
     val board = Array.ofDim[Int](5, 5)
 
     val puzzle = loadPuzzle(args(0))
+    val puzzleColors = Array.tabulate(5, 5)((x, y) => if (x == 1 && y == 0 || x == 0 && y == 2) 0 else 1)
 
-    printBoard(puzzle)
+    printBoard(puzzle, "Initial puzzle")
+
+    printBoard(puzzleColors, "Puzzle colors")
+
+    println("Flood fill: " + floodFillCheck(puzzleColors))
 
     val size = board.length
 
