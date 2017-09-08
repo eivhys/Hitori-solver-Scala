@@ -76,6 +76,15 @@ object HitoriSolver {
      1 - white
       */
 
+    val horiVal = for (row <- puzzleValues) yield row
+    val horiCol = for (row <- puzzleColors) yield row
+    
+    horiCol.foreach{
+      row => row.foreach(print)
+      println("")
+    }
+
+
     // Rows and columns only have unique numbers
     // Find all values in a row/column and
 
@@ -101,60 +110,55 @@ object HitoriSolver {
   def floodFillCheck(puzzleColors:Array[Array[Int]]):Boolean = {
     val size = puzzleColors.length
 
-    /*
-    // Flatten 2D puzzle to a 1D array
-    val puzzle1D = puzzleColors.flatten
-    // Consider all black tiles as checked tiles
-    val checkedTiles = Array.tabulate[Boolean](size, size)((y,x) => (puzzle1D(index(x, y, size)) == 0))
-    printBoardBool(checkedTiles, "checkedTiles")
-    */
+    // Puzzle is not solved yet
+    if (puzzleColors.contains(-1))
+      return false
 
     val checked = for (tile <- puzzleColors.flatten) yield tile == 0
 
-    println("Pre flood fill checked: " + checked.length)
-    println("Pre flood fill whites: " + checked.count(x => !x))
-    println("Pre flood fill blacks: " + checked.count(x => x))
+    //println("Pre flood fill checked: " + checked.length)
+    //println("Pre flood fill whites: " + checked.count(x => !x))
+    //println("Pre flood fill blacks: " + checked.count(x => x))
 
     // Find the first white tile
-    val index = checked.indexWhere(x => !x)
-    val first = if (index != -1 ) index :: List[Int]() else List[Int]()
+    val tile = checked.indexWhere(x => !x)
+    val first = if (tile != -1) tile :: List[Int]() else List[Int]()
 
     @tailrec
-    def floodFill(checkedTiles:Array[Boolean], next:List[Int], dir:Int, iterations:Int = 0): Array[Boolean] = {
+    def floodFill(checkedTiles:Array[Boolean], next:List[Int], dir:Int): Array[Boolean] = {
       next match {
         case Nil => checkedTiles
-        case index :: tail => {
-          val iter = if (checkedTiles(index)) iterations + 1 else 0
-
-          if (iter > 4)
-            return checkedTiles
+        case head :: tail => {
+          val index = head
 
           checkedTiles(index) = true
 
-          println("Checked: " + index + " | isChecked: " + checkedTiles(index) + " | dir: " + dir)
+          //println("Checked: " + index + " | isChecked: " + checkedTiles(index) + " | dir: " + dir)
 
           dir match {
             case 0 => {
               val up = index - size
-              val next = if (up > 0 && !checkedTiles(up)) up :: tail else index :: tail
-              floodFill(checkedTiles, next, 1, iter)
+              val next = if (up > 0 && !checkedTiles(up)) up :: tail else tail
+              floodFill(checkedTiles, index :: next, dir + 1)
             }
             case 1 => {
               val right = index + 1
-              val next = if (right < checkedTiles.length && !checkedTiles(right)) right :: tail else index :: tail
-              floodFill(checkedTiles, next, 2, iter)
+              val next = if (right % size > index % size && right < checkedTiles.length && right < checkedTiles.length && !checkedTiles(right)) right :: tail else tail
+              floodFill(checkedTiles, index :: next, dir + 1)
             }
             case 2 => {
               val down = index + size
-              val next = if (down < checkedTiles.length && !checkedTiles(down)) down :: tail else index :: tail
-              floodFill(checkedTiles, next, 3, iter)
+              val next = if (down < checkedTiles.length && !checkedTiles(down)) down :: tail else tail
+              floodFill(checkedTiles, index :: next, dir + 1)
             }
             case 3 => {
               val left = index - 1
-              val next = if (left > 0 && !checkedTiles(left)) left :: tail else index :: tail
-              floodFill(checkedTiles, next, 0, iter)
+              val next = if (left % size < index % size && left > 0 && left < checkedTiles.length && !checkedTiles(left)) left :: tail else tail
+              floodFill(checkedTiles, index :: next, dir + 1)
             }
-            case _ => floodFill(checkedTiles, tail, 0)
+            case _ => {
+              floodFill(checkedTiles, tail, 0)
+            }
           }
         }
       }
@@ -204,13 +208,15 @@ object HitoriSolver {
     val board = Array.ofDim[Int](5, 5)
 
     val puzzle = loadPuzzle(args(0))
-    val puzzleColors = Array.tabulate(5, 5)((x, y) => if (x == 1 && y == 0 || x == 0 && y == 2) 0 else 1)
+    val puzzleColors = Array.tabulate(5, 5)((x, y) => if (x == 3 && y == 0 || x == 0 && y == 4 || x == 4 && y == 1) 0 else 1)
 
     printBoard(puzzle, "Initial puzzle")
 
     printBoard(puzzleColors, "Puzzle colors")
 
     println("Flood fill: " + floodFillCheck(puzzleColors))
+
+    println("Puzzle solved: " + isSolved(puzzle, puzzleColors))
 
     val size = board.length
 
