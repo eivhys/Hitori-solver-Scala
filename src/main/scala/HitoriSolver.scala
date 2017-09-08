@@ -76,30 +76,30 @@ object HitoriSolver {
      1 - white
       */
 
-    val horiVal = for (row <- puzzleValues) yield row
-    val horiCol = for (row <- puzzleColors) yield row
-    
-    horiCol.foreach{
-      row => row.foreach(print)
-      println("")
-    }
+    val horizontalValues = for (row <- puzzleValues) yield row
+    val horizontalColors = for (row <- puzzleColors) yield row
+    val verticalValues = horizontalValues.transpose
+    val verticalColors = horizontalColors.transpose
 
 
     // Rows and columns only have unique numbers
     // Find all values in a row/column and
 
-    // Rows
+    //val unique = horizontalValues.forall(l => l.distinct)
 
-    // Columns
+
+
 
     // No adjacent black fields
+    val adjacentHorizontal = horizontalColors.sliding(2).forall(pair => pair.length != pair.distinct.length)
+    val adjacentVertical = verticalColors.sliding(2).forall(pair => pair.length != pair.distinct.length)
 
 
 
-
-
-    floodFillCheck(puzzleColors)
+    adjacentHorizontal && adjacentVertical && floodFillCheck(puzzleColors)
   }
+
+  val containsOnlyDistinct = (arr:Array[Any]) => arr.length == arr.distinct.length
 
   /**
     * Recursively checks if a puzzle has interconnected white tiles, black tiles are ignored.
