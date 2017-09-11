@@ -226,6 +226,85 @@ object HitoriSolver {
 
     val white = 1
 
+    def applyRunningTechniques (values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
+
+      // 2 equal neighbours with different colors
+      for (x <- 0 until size - 1) {
+        for (y <- 0 until size) {
+          // Vertical
+          if (values(x)(y) == values(x + 1)(y)) {
+            if (colors(x)(y) == black) {
+              colors(x + 1)(y) = white
+            }
+            if (colors(x + 1)(y) == black) {
+              colors(x)(y) = white
+            }
+            if (colors(x)(y) == white) {
+              colors(x + 1)(y) = black
+            }
+            if (colors(x + 1)(y) == white) {
+              colors(x)(y) = black
+            }
+          }
+          // Horizontal
+          if (values(y)(x) == values(y)(x + 1)) {
+            if (colors(y)(x) == black) {
+              colors(y)(x + 1) = white
+            }
+            if (colors(y)(x + 1) == black) {
+              colors(y)(x) = white
+            }
+            if (colors(y)(x) == white) {
+              colors(y)(x + 1) = black
+            }
+            if (colors(y)(x + 1) == white) {
+              colors(y)(x) = black
+            }
+          }
+        }
+      }
+
+      // 3-black-round-1-white
+      for (x <- 1 until size - 1) {
+        for (y <- 1 until size - 1) {
+          var blacks = 0
+          var whiteX = 0
+          var whiteY = 0
+          if (colors(x + 1)(y) == black) {
+            blacks = blacks + 1
+          } else {
+            whiteX = x + 1
+            whiteY = y
+          }
+          if (colors(x - 1)(y) == black) {
+            blacks = blacks + 1
+          } else {
+            whiteX = x - 1
+            whiteY = y
+          }
+          if (colors(x)(y + 1) == black) {
+            blacks = blacks + 1
+          } else {
+            whiteX = x
+            whiteY = y + 1
+          }
+          if (colors(x)(y - 1) == black) {
+            blacks = blacks + 1
+          } else {
+            whiteX = x
+            whiteY = y - 1
+          }
+          if (blacks >= 3) {
+            colors(whiteX)(whiteY) = white
+          }
+        }
+      }
+
+      // TODO 2-blacks-round-1-white-next-to-puzzle-border
+
+      colors
+    }
+
     def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
 
       //Gives cells a color based on their position relative to each other
