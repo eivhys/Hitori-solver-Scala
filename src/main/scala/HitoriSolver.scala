@@ -1,7 +1,6 @@
 import java.io.{File, PrintWriter}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.Stack
 import scala.collection.mutable.ArrayBuffer
 
 object HitoriSolver {
@@ -40,15 +39,6 @@ object HitoriSolver {
     outputFile.close
   }
 
-  /*
-  def getColumn(puzzle:Array[Array[Int]], i:Int = -1):Array[Int] = {
-    var rows = new ArrayBuffer[Array[Int]]()
-
-    puzzle.foreach(arr => rows += arr)
-
-    rows.toArray
-  }*/
-
   def uniqueNumbers(board:Array[Array[Int]], colors:Array[Array[Int]]): Boolean = {
     for (x <- 0 until board.length) {
       for (y <- 0 until board.length) {
@@ -69,12 +59,9 @@ object HitoriSolver {
   }
 
   def isSolved(puzzleValues:Array[Array[Int]], puzzleColors:Array[Array[Int]]):Boolean = {
-    /*
-     PuzzleColors
-     -1 - nothing
-     0 - black
-     1 - white
-      */
+    // All tile must either contain a 0 or a 1 for the puzzle to be solved
+    if (puzzleColors.contains(-1))
+      return false
 
     val horizontalValues = for (row <- puzzleValues) yield row
     val horizontalColors = for (row <- puzzleColors) yield row
@@ -85,24 +72,32 @@ object HitoriSolver {
     // Rows and columns only have unique numbers
     // Find all values in a row/column and
 
-    //val unique = horizontalValues.forall(l => l.distinct)
+    // Create new values array without tiles that are blacked out (color 0)
+  //  val filteredHorizontal:Array[Int] =
+//      for ((values, colors) <- (horizontalValues.zip(horizontalColors))) yield for ((v, c) <- (values.zip(colors)) if c ==1) yield v
 
+    //val filteredVertical:Array[Int] = (verticalValues, verticalColors).zipped.map{ (v, c) => if (c == 1) v}
 
-
+    val unique = true//filteredHorizontal.forall(containsOnlyDistinct) && filteredVertical.forall(containsOnlyDistinct)
+    println("All tile values unique: " + unique)
 
     // No adjacent black fields
-    val adjacentHorizontal = horizontalColors.sliding(2).forall(pair => pair.length != pair.distinct.length)
-    val adjacentVertical = verticalColors.sliding(2).forall(pair => pair.length != pair.distinct.length)
+    //val adjacentHorizontal:Boolean = horizontalColors.forall{ row => row.sliding(2).forall(containsNoBlacksOnly) }
+    //val adjacentVertical:Boolean = verticalColors.forall{ row => row.sliding(2).forall(containsNoBlacksOnly) }
+    val adjacent = horizontalColors.forall(containsNoAdjacent) && verticalColors.forall(containsNoAdjacent)
+    println("No adjacent black tiles: " + adjacent)
 
-
-
-    adjacentHorizontal && adjacentVertical && floodFillCheck(puzzleColors)
+    unique && adjacent && floodFillCheck(puzzleColors)
   }
 
-  val containsOnlyDistinct = (arr:Array[Any]) => arr.length == arr.distinct.length
+  val containsOnlyDistinct = (arr:Array[Int]) => arr.length == arr.distinct.length
+  val containsNoBlacksOnly = (arr:Array[Int]) => arr.distinct.contains(0) && !arr.distinct.contains(1)
+
+  // Goes through each row and column (arr) 2 tiles at a time, ensures that a pair never contains blacks only
+  val containsNoAdjacent = (arr:Array[Int]) => arr.sliding(2).forall(containsNoBlacksOnly)
 
   /**
-    * Recursively checks if a puzzle has interconnected white tiles, black tiles are ignored.
+    * Recursively check if a puzzle has interconnected white tiles, black tiles are ignored.
     *
     * @param puzzleColors 2D array of tiles containing -1, 0, 1 color mappings
     * @return True if the puzzle has interconnected white tiles, false otherwise
@@ -138,22 +133,39 @@ object HitoriSolver {
           dir match {
             case 0 => {
               val up = index - size
-              val next = if (up > 0 && !checkedTiles(up)) up :: tail else tail
+              val next =
+                if (up > 0 && !checkedTiles(up))
+                  up :: tail
+                else tail
               floodFill(checkedTiles, index :: next, dir + 1)
             }
             case 1 => {
               val right = index + 1
-              val next = if (right % size > index % size && right < checkedTiles.length && right < checkedTiles.length && !checkedTiles(right)) right :: tail else tail
+              val next =
+                if (right % size > index % size &&
+                  right < checkedTiles.length &&
+                  right < checkedTiles.length &&
+                  !checkedTiles(right))
+                  right :: tail
+                else tail
               floodFill(checkedTiles, index :: next, dir + 1)
             }
             case 2 => {
               val down = index + size
-              val next = if (down < checkedTiles.length && !checkedTiles(down)) down :: tail else tail
+              val next =
+                if (down < checkedTiles.length && !checkedTiles(down))
+                  down :: tail
+                else tail
               floodFill(checkedTiles, index :: next, dir + 1)
             }
             case 3 => {
               val left = index - 1
-              val next = if (left % size < index % size && left > 0 && left < checkedTiles.length && !checkedTiles(left)) left :: tail else tail
+              val next = if (left % size < index % size &&
+                left > 0 &&
+                left < checkedTiles.length &&
+                !checkedTiles(left))
+                left :: tail
+              else tail
               floodFill(checkedTiles, index :: next, dir + 1)
             }
             case _ => {
