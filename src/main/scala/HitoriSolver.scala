@@ -437,7 +437,6 @@ object HitoriSolver {
 
       colors
     }
-
     def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
 
       //Gives cells a color based on their position relative to each other
