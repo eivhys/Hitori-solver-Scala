@@ -1,4 +1,4 @@
-[info] Updating {file:/Users/eivindhystad/GitHub/Hitori-solver-Scala/project/}hitori-solver-scala-build...
+[info] Updating {file:/C:/Development/Dat233/Hitori-solver-Scala/project/}hitori-solver-scala-build...
 [debug] :: resolving dependencies :: default#hitori-solver-scala-build;0.1-SNAPSHOT
 [debug] 	confs: [compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, sources, docs, pom, scala-tool]
 [debug] 	validate = true
@@ -6009,19 +6009,19 @@
 [debug] 	[NOT REQUIRED] org.scala-sbt#template-resolver;0.1!template-resolver.jar
 [debug] 	[NOT REQUIRED] org.scala-lang#jline;2.10.6!jline.jar
 [debug] 	[NOT REQUIRED] org.fusesource.jansi#jansi;1.4!jansi.jar
-[debug] :: resolution report :: resolve 2373ms :: artifacts dl 41ms
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT compile produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-compile.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT runtime produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-runtime.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT test produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-test.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT provided produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-provided.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT optional produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-optional.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT compile-internal produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-compile-internal.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT runtime-internal produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-runtime-internal.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT test-internal produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-test-internal.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT plugin produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-plugin.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT sources produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-sources.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT docs produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-docs.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT pom produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-pom.xml
-[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT scala-tool produced in /Users/eivindhystad/GitHub/Hitori-solver-Scala/project/target/scala-2.10/sbt-0.13/resolution-cache/reports/default-hitori-solver-scala-build-scala-tool.xml
-[debug] 	resolve done (2373ms resolve - 41ms download)
+[debug] :: resolution report :: resolve 1208ms :: artifacts dl 26ms
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT compile produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-compile.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT runtime produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-runtime.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT test produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-test.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT provided produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-provided.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT optional produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-optional.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT compile-internal produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-compile-internal.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT runtime-internal produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-runtime-internal.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT test-internal produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-test-internal.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT plugin produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-plugin.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT sources produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-sources.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT docs produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-docs.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT pom produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-pom.xml
+[debug] 	report for default#hitori-solver-scala-build;0.1-SNAPSHOT scala-tool produced in C:\Development\Dat233\Hitori-solver-Scala\project\target\scala-2.10\sbt-0.13\resolution-cache\reports\default-hitori-solver-scala-build-scala-tool.xml
+[debug] 	resolve done (1208ms resolve - 26ms download)
 [info] Done updating.
