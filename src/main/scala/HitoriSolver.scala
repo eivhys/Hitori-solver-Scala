@@ -3,12 +3,14 @@ import java.io.{File, PrintWriter}
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
+
 object HitoriSolver {
+  type Board = Array[Array[Int]]
+  case class Puzzle(values:Board, colors:Board)
 
   val noColor = -1
   val black = 0
   val white = 1
-  val size = 5
 
   def loadPuzzle(filePath:String):Array[Array[Int]] = {
     val file = new File(filePath)
@@ -38,34 +40,28 @@ object HitoriSolver {
     outputFile.close
   }
 
-  def uniqueNumbers(board:Array[Array[Int]], colors:Array[Array[Int]]): Boolean = {
-    for (x <- 0 until board.length) {
-      for (y <- 0 until board.length) {
-        val e = board(x)(y)
-        for (i <- 0 until board.length) {
-          val e2 = board(i)(y)
-          val e3 = board(x)(i)
-          if (e == e2 && e == white && e2 == white) {
-            return false
-          }
-          if (e == e3 && e == white && e3 == white) {
-            return false
-          }
-        }
-      }
-    }
-    true
+  def timedFunc[T](block: => T):T = {
+    val start = System.currentTimeMillis()
+    val res = block
+    print("Time elapsed: " + (System.currentTimeMillis() - start) + " ms\n")
+    res
   }
 
   val containsOnlyDistinct = (arr:Array[Int]) => arr.length == arr.distinct.length
 
   // Checks if an array only contains blacks (0)
-  val containsNoBlacksOnly = (arr:Array[Int]) => arr.contains(1)
+  val containsNoBlacksOnly = (arr:Array[Int]) => !arr.contains(0)
 
   // Goes through each row and column (arr) 2 tiles at a time, ensures that a pair never contains blacks only
   val containsNoAdjacent = (arr:Array[Int]) => arr.sliding(2).forall(containsNoBlacksOnly)
 
-  val completePuzzle = (colors:Array[Array[Int]]) => colors.exists(_.contains(-1))
+  val incompletePuzzle = (colors:Array[Array[Int]]) => colors.exists(_.contains(-1))
+
+  val xIndex = (i:Int, size:Int) => i % size
+  val yIndex = (i:Int, size:Int) => i / size    // Works because of integer division, alternative: (i - (i % size)) / size
+  val index = (x:Int, y:Int, size:Int) => x + (y * size)
+
+  val wOrB = (x:Int) => (if (x == 0) "b " else "w ");
 
   /**
     * Checks if the puzzle is a valid solution. Requires puzzle as two 2D arrays, one for values and another for blacked
@@ -82,7 +78,7 @@ object HitoriSolver {
     * @return True if the puzzle is solved, false otherwise
     */
   def isSolved(horizontalValues:Array[Array[Int]], horizontalColors:Array[Array[Int]], log:Boolean=false):Boolean = {
-    if (completePuzzle(horizontalColors)) {
+    if (incompletePuzzle(horizontalColors)) {
       if (log) println("Incomplete puzzle! Aborting puzzle solved check")
       return false
     }
@@ -124,25 +120,28 @@ object HitoriSolver {
     * @param puzzleColors 2D array of tiles containing -1, 0, 1 color mappings
     * @return True if the puzzle has interconnected white tiles, false otherwise
     */
-  def floodFillCheck(puzzleColors:Array[Array[Int]]):Boolean = {
-    if (completePuzzle(puzzleColors)) {
+  def floodFillCheck(puzzleColors:Array[Array[Int]], log:Boolean=false):Boolean = {
+    /*
+    if (incompletePuzzle(puzzleColors)) {
       println("Incomplete puzzle! Aborting flood fill check")
       return false
-    }
+    }*/
 
     val size = puzzleColors.length
     val checked = for (tile <- puzzleColors.flatten) yield tile == 0
 
-    //println("Pre flood fill checked: " + checked.length)
-    //println("Pre flood fill whites: " + checked.count(x => !x))
-    //println("Pre flood fill blacks: " + checked.count(x => x))
+    if (log) {
+      println("Pre flood fill checked: " + checked.length)
+      println("Pre flood fill whites: " + checked.count(x => !x))
+      println("Pre flood fill blacks: " + checked.count(x => x))
+    }
 
     // Find the first white tile
     val tile = checked.indexWhere(x => !x)
     val first = if (tile != -1) tile :: List[Int]() else List[Int]()
 
     @tailrec
-    def floodFill(checkedTiles:Array[Boolean], next:List[Int], dir:Int): Array[Boolean] = {
+    def floodFill(checkedTiles:Array[Boolean], next:List[Int], dir:Int):Array[Boolean] = {
       next match {
         case Nil => checkedTiles
         case head :: tail => {
@@ -201,18 +200,26 @@ object HitoriSolver {
     !floodFill(checked, first, 0).contains(false)
   }
 
-  // val performs better than def when the method is called multiple times
-  val xIndex = (i:Int, size:Int) => i % size
-  val yIndex = (i:Int, size:Int) => i / size    // Works because of integer division, alternative: (i - (i % size)) / size
-  val index = (x:Int, y:Int, size:Int) => x + (y * size)
+  def solve(puzzle:Puzzle):Puzzle = {
 
-  val wOrB = (x:Int) => (if (x == 0) "b " else "w ");
+    @tailrec
+    def findSolution(colors:Array[Array[Int]]):Board = {
+      if (isSolved(puzzle.values, colors))
+        return colors
+
+      //val index = colors.indexWhere(x => x == -1)
+
+      findSolution(colors)
+    }
+
+    puzzle
+  }
 
   def printArray(arr:Array[Array[Int]], headline:String=""):Unit = {
     if (!headline.isEmpty)
       println("-- " + headline + " --")
 
-    arr.foreach(a => println(a.mkString(", ")))
+    arr.foreach(a => println(a.mkString(" ")))
   }
 
   def printBoard(puzzle:Array[Array[Int]], headline:String=""):Unit = {
@@ -235,18 +242,104 @@ object HitoriSolver {
     }
   }
 
-  def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
+  def applyRunningTechniques (values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
+    val size = values.length
 
+    // 2 equal neighbours with different colors
+    for (x <- 0 until size - 1) {
+      for (y <- 0 until size) {
+        // Vertical
+        if (values(x)(y) == values(x + 1)(y)) {
+          if (colors(x)(y) == black) {
+            colors(x + 1)(y) = white
+          }
+          if (colors(x + 1)(y) == black) {
+            colors(x)(y) = white
+          }
+          if (colors(x)(y) == white) {
+            colors(x + 1)(y) = black
+          }
+          if (colors(x + 1)(y) == white) {
+            colors(x)(y) = black
+          }
+        }
+        // Horizontal
+        if (values(y)(x) == values(y)(x + 1)) {
+          if (colors(y)(x) == black) {
+            colors(y)(x + 1) = white
+          }
+          if (colors(y)(x + 1) == black) {
+            colors(y)(x) = white
+          }
+          if (colors(y)(x) == white) {
+            colors(y)(x + 1) = black
+          }
+          if (colors(y)(x + 1) == white) {
+            colors(y)(x) = black
+          }
+        }
+      }
+    }
+
+    // 3-black-round-1-white
+    for (x <- 1 until size - 1) {
+      for (y <- 1 until size - 1) {
+        var blacks = 0
+        var whiteX = 0
+        var whiteY = 0
+        if (colors(x + 1)(y) == black) {
+          blacks = blacks + 1
+        } else {
+          whiteX = x + 1
+          whiteY = y
+        }
+        if (colors(x - 1)(y) == black) {
+          blacks = blacks + 1
+        } else {
+          whiteX = x - 1
+          whiteY = y
+        }
+        if (colors(x)(y + 1) == black) {
+          blacks = blacks + 1
+        } else {
+          whiteX = x
+          whiteY = y + 1
+        }
+        if (colors(x)(y - 1) == black) {
+          blacks = blacks + 1
+        } else {
+          whiteX = x
+          whiteY = y - 1
+        }
+        if (blacks >= 3) {
+          colors(whiteX)(whiteY) = white
+        }
+      }
+    }
+
+    // TODO 2-blacks-round-1-white-next-to-puzzle-border
+
+    colors
+  }
+
+  def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
+    val size = values.length
     //Gives cells a color based on their position relative to each other
 
     //TODO Needs more starting techniques
 
-    val newColors = Array.tabulate(size, size)((_,_) => -1)
+    val newColors = Array.ofDim[Int](size, size)
+
+    for (x <- 0 until size) {
+      for (y <- 0 until size) {
+        newColors(x)(y) = noColor
+      }
+    }
 
     if (size > 3) {
       for (x <- 0 until size) {
         for (y <- 0 until size - 3) {
-          //Adjacent triples
+          //Adjecent triples
           //Vertical
           if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 2)) {
             newColors(x)(y) = black
@@ -345,217 +438,18 @@ object HitoriSolver {
     * TODO Save solution ✓
     * */
 
-    val board = Array.ofDim[Int](5, 5)
-
     val puzzle = loadPuzzle(args(0))
-    //val puzzleColors = Array.tabulate(5, 5)((_,_) => -1)//((x, y) => if (x == 3 && y == 0 || x == 0 && y == 3 || x == 4 && y == 2) 0 else 1)
-
-
-    val size = board.length
-
-    val noColor = -1
-
-    val black = 0
-
-    val white = 1
-
-    def applyRunningTechniques (values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
-
-      // 2 equal neighbours with different colors
-      for (x <- 0 until size - 1) {
-        for (y <- 0 until size) {
-          // Vertical
-          if (values(x)(y) == values(x + 1)(y)) {
-            if (colors(x)(y) == black) {
-              colors(x + 1)(y) = white
-            }
-            if (colors(x + 1)(y) == black) {
-              colors(x)(y) = white
-            }
-            if (colors(x)(y) == white) {
-              colors(x + 1)(y) = black
-            }
-            if (colors(x + 1)(y) == white) {
-              colors(x)(y) = black
-            }
-          }
-          // Horizontal
-          if (values(y)(x) == values(y)(x + 1)) {
-            if (colors(y)(x) == black) {
-              colors(y)(x + 1) = white
-            }
-            if (colors(y)(x + 1) == black) {
-              colors(y)(x) = white
-            }
-            if (colors(y)(x) == white) {
-              colors(y)(x + 1) = black
-            }
-            if (colors(y)(x + 1) == white) {
-              colors(y)(x) = black
-            }
-          }
-        }
-      }
-
-      // 3-black-round-1-white
-      for (x <- 1 until size - 1) {
-        for (y <- 1 until size - 1) {
-          var blacks = 0
-          var whiteX = 0
-          var whiteY = 0
-          if (colors(x + 1)(y) == black) {
-            blacks = blacks + 1
-          } else {
-            whiteX = x + 1
-            whiteY = y
-          }
-          if (colors(x - 1)(y) == black) {
-            blacks = blacks + 1
-          } else {
-            whiteX = x - 1
-            whiteY = y
-          }
-          if (colors(x)(y + 1) == black) {
-            blacks = blacks + 1
-          } else {
-            whiteX = x
-            whiteY = y + 1
-          }
-          if (colors(x)(y - 1) == black) {
-            blacks = blacks + 1
-          } else {
-            whiteX = x
-            whiteY = y - 1
-          }
-          if (blacks >= 3) {
-            colors(whiteX)(whiteY) = white
-          }
-        }
-      }
-
-      // TODO 2-blacks-round-1-white-next-to-puzzle-border
-
-      colors
-    }
-    def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
-
-      //Gives cells a color based on their position relative to each other
-
-      //TODO Needs more starting techniques
-
-      val newColors = Array.ofDim[Int](size, size)
-
-      for (x <- 0 until size) {
-        for (y <- 0 until size) {
-          newColors(x)(y) = noColor
-        }
-      }
-
-      if (size > 3) {
-        for (x <- 0 until size) {
-          for (y <- 0 until size - 3) {
-            //Adjecent triples
-            //Vertical
-            if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 2)) {
-              newColors(x)(y) = black
-              newColors(x)(y + 1) = white
-              newColors(x)(y + 2) = black
-            }
-            //Horizontal
-            if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 2)(x)) {
-              newColors(y)(x) = black
-              newColors(y + 1)(x) = white
-              newColors(y + 2)(x) = black
-            }
-
-            //Square between pair
-            //Vertical
-            if (values(x)(y) == values(x)(y + 2)) {
-              newColors(x)(y + 1) = white
-            }
-            //Horizontal
-            if (values(y)(x) == values(y + 2)(x)) {
-              newColors(y + 1)(x) = white
-            }
-          }
-        }
-
-        if (size > 4) {
-
-          //Pair induction
-          for (x <- 0 until size) {
-            for (y <- 0 until size - 4) {
-              if (values(x)(y) == values(x)(y + 2) && values(x)(y) == values(x)(y + 3)) {
-                newColors(x)(y) = black
-              }
-              if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 3)) {
-                newColors(x)(y + 2) = black
-              }
-              if (values(y)(x) == values(y + 2)(x) && values(y)(x) == values(y + 3)(x)) {
-                newColors(y)(x) = black
-              }
-              if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 3)(x)) {
-                newColors(y + 2)(x) = black
-              }
-            }
-          }
-
-          //White around all blacks (all whites needs a friend)
-          for (x <- 0 until size) {
-            for (y <- 0 until size) {
-              if (newColors(x)(y) == black) {
-                if (x >= 0 && x < size - 1) {
-                  newColors(x + 1)(y) = white
-                }
-                if (x > 0 && x < size) {
-                  newColors(x - 1)(y) = white
-                }
-                if (y >= 0 && y < size - 1) {
-                  newColors(x)(y + 1) = white
-                }
-                if (y > 0 && y < size) {
-                  newColors(x)(y - 1) = white
-                }
-              }
-            }
-          }
-        }
-        //Corner rule
-        val end = size - 1
-        //Top left
-        if (values(0)(0) == values(1)(0) && values(0)(0) == values(0)(1)) {
-          newColors(0)(0) = black
-        }
-        //Top right
-        if (values(end)(0) == values(end)(1) && values(end)(0) == values(end - 1)(0)) {
-          newColors(end)(0) = black
-        }
-        //Bottom left
-        if (values(0)(end) == values(1)(end) && values(0)(end) == values(0)(end - 1)) {
-          newColors(0)(end) = black
-        }
-        //Bottom right
-        if (values(end)(end) == values(end)(end - 1) && values(end)(end) == values(end - 1)(end)) {
-          newColors(end)(end) = black
-        }
-      }
-      newColors
-    }
-
-    val startingColors = applyStartingTechniques(board)
-
-    val puzzleColors = applyStartingTechniques(puzzle)
+    val puzzleColors = Array.tabulate(5, 5)/*((_,_) => -1)*/((x, y) => if (x == 3 && y == 0 || x == 0 && y == 4 || x == 4 && y == 2) 0 else 1)
+    //val puzzleColors = applyStartingTechniques(puzzle)
 
     printBoard(puzzle, "Initial puzzle")
-
     printBoard(puzzleColors, "Puzzle colors")
 
     //println("Flood fill: " + floodFillCheck(puzzleColors))
 
-    println("Puzzle solved: " + isSolved(puzzle, puzzleColors, true))
+    println("Puzzle solved: " + timedFunc{ isSolved(puzzle, puzzleColors, true) })
 
     // Run after solution found
     savePuzzle(args(1), puzzle)
   }
-
 }
