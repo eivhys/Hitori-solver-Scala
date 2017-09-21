@@ -6,10 +6,9 @@ import scala.collection.mutable.ArrayBuffer
 object HitoriSolver {
 
   val noColor = -1
-
   val black = 0
-
   val white = 1
+  val size = 5
 
   def loadPuzzle(filePath:String):Array[Array[Int]] = {
     val file = new File(filePath)
@@ -58,43 +57,66 @@ object HitoriSolver {
     true
   }
 
-  def isSolved(puzzleValues:Array[Array[Int]], puzzleColors:Array[Array[Int]]):Boolean = {
-    // All tile must either contain a 0 or a 1 for the puzzle to be solved
-    if (puzzleColors.contains(-1))
-      return false
-
-    val horizontalValues = for (row <- puzzleValues) yield row
-    val horizontalColors = for (row <- puzzleColors) yield row
-    val verticalValues = horizontalValues.transpose
-    val verticalColors = horizontalColors.transpose
-
-
-    // Rows and columns only have unique numbers
-    // Find all values in a row/column and
-
-    // Create new values array without tiles that are blacked out (color 0)
-  //  val filteredHorizontal:Array[Int] =
-//      for ((values, colors) <- (horizontalValues.zip(horizontalColors))) yield for ((v, c) <- (values.zip(colors)) if c ==1) yield v
-
-    //val filteredVertical:Array[Int] = (verticalValues, verticalColors).zipped.map{ (v, c) => if (c == 1) v}
-
-    val unique = true//filteredHorizontal.forall(containsOnlyDistinct) && filteredVertical.forall(containsOnlyDistinct)
-    println("All tile values unique: " + unique)
-
-    // No adjacent black fields
-    //val adjacentHorizontal:Boolean = horizontalColors.forall{ row => row.sliding(2).forall(containsNoBlacksOnly) }
-    //val adjacentVertical:Boolean = verticalColors.forall{ row => row.sliding(2).forall(containsNoBlacksOnly) }
-    val adjacent = horizontalColors.forall(containsNoAdjacent) && verticalColors.forall(containsNoAdjacent)
-    println("No adjacent black tiles: " + adjacent)
-
-    unique && adjacent && floodFillCheck(puzzleColors)
-  }
-
   val containsOnlyDistinct = (arr:Array[Int]) => arr.length == arr.distinct.length
-  val containsNoBlacksOnly = (arr:Array[Int]) => arr.distinct.contains(0) && !arr.distinct.contains(1)
+
+  // Checks if an array only contains blacks (0)
+  val containsNoBlacksOnly = (arr:Array[Int]) => arr.contains(1)
 
   // Goes through each row and column (arr) 2 tiles at a time, ensures that a pair never contains blacks only
   val containsNoAdjacent = (arr:Array[Int]) => arr.sliding(2).forall(containsNoBlacksOnly)
+
+  val completePuzzle = (colors:Array[Array[Int]]) => colors.exists(_.contains(-1))
+
+  /**
+    * Checks if the puzzle is a valid solution. Requires puzzle as two 2D arrays, one for values and another for blacked
+    * out tiles.
+    *
+    * Ensures that there are:
+    * - Unique numbers on each line/columns
+    * - No adjacent black tiles
+    * - All white tiles are interconnected
+    *
+    * @param horizontalValues 2D array of puzzle values
+    * @param horizontalColors 2D array of puzzle colors
+    * @param log Flag for printing debug messages to the console
+    * @return True if the puzzle is solved, false otherwise
+    */
+  def isSolved(horizontalValues:Array[Array[Int]], horizontalColors:Array[Array[Int]], log:Boolean=false):Boolean = {
+    if (completePuzzle(horizontalColors)) {
+      if (log) println("Incomplete puzzle! Aborting puzzle solved check")
+      return false
+    }
+
+    val verticalValues = horizontalValues.transpose
+    val verticalColors = horizontalColors.transpose
+
+    val filteredHorizontal = for ((vs, cs) <- horizontalValues.zip(horizontalColors)) yield vs.zip(cs).collect{ case(v, 1) => v }
+    val filteredVertical = for ((vs, cs) <- verticalValues.zip(verticalColors)) yield vs.zip(cs).collect{ case(v, 1) => v }
+
+    if (log) {
+      printArray(horizontalValues, "Horizontal values")
+      printArray(horizontalColors, "Horizontal colors")
+      printArray(filteredHorizontal, "Horizontal values duplicates filtered")
+      printArray(filteredVertical, "Vertical values duplicates filtered")
+    }
+
+    // Are all tiles on the same row/column contain only unique numbers unless they are blacked out?
+    val unique = filteredHorizontal.forall(containsOnlyDistinct) && filteredVertical.forall(containsOnlyDistinct)
+
+    // Are no black fields adjacent(not diagonally)?
+    val adjacent = horizontalColors.forall(containsNoAdjacent) && verticalColors.forall(containsNoAdjacent)
+
+    // Are all white tiles are interconnected?
+    val floodFill = floodFillCheck(horizontalColors)
+
+    if (log) {
+      println("All tile values unique: " + unique)
+      println("No adjacent black tiles: " + adjacent)
+      println("All white tiles interconnected: " + floodFill)
+    }
+
+    unique && adjacent && floodFill
+  }
 
   /**
     * Recursively check if a puzzle has interconnected white tiles, black tiles are ignored.
@@ -103,12 +125,12 @@ object HitoriSolver {
     * @return True if the puzzle has interconnected white tiles, false otherwise
     */
   def floodFillCheck(puzzleColors:Array[Array[Int]]):Boolean = {
-    val size = puzzleColors.length
-
-    // Puzzle is not solved yet
-    if (puzzleColors.contains(-1))
+    if (completePuzzle(puzzleColors)) {
+      println("Incomplete puzzle! Aborting flood fill check")
       return false
+    }
 
+    val size = puzzleColors.length
     val checked = for (tile <- puzzleColors.flatten) yield tile == 0
 
     //println("Pre flood fill checked: " + checked.length)
@@ -186,11 +208,18 @@ object HitoriSolver {
 
   val wOrB = (x:Int) => (if (x == 0) "b " else "w ");
 
+  def printArray(arr:Array[Array[Int]], headline:String=""):Unit = {
+    if (!headline.isEmpty)
+      println("-- " + headline + " --")
+
+    arr.foreach(a => println(a.mkString(", ")))
+  }
+
   def printBoard(puzzle:Array[Array[Int]], headline:String=""):Unit = {
     if (!headline.isEmpty)
       println("-- " + headline + " --")
 
-    for (line<-puzzle){
+    for (line<-puzzle) {
       line.foreach(x => print(x + wOrB(x)))
       println("")
     }
@@ -200,10 +229,120 @@ object HitoriSolver {
     if (!headline.isEmpty)
       println("-- " + headline + " --")
 
-    for (line<-puzzle){
+    for (line<-puzzle) {
       line.foreach(x => print(wOrB(if (x) 1 else 0)))
       println("")
     }
+  }
+
+  def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
+
+    //Gives cells a color based on their position relative to each other
+
+    //TODO Needs more starting techniques
+
+    val newColors = Array.tabulate(size, size)((_,_) => -1)
+
+    if (size > 3) {
+      for (x <- 0 until size) {
+        for (y <- 0 until size - 3) {
+          //Adjacent triples
+          //Vertical
+          if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 2)) {
+            newColors(x)(y) = black
+            newColors(x)(y + 1) = white
+            newColors(x)(y + 2) = black
+          }
+          //Horizontal
+          if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 2)(x)) {
+            newColors(y)(x) = black
+            newColors(y + 1)(x) = white
+            newColors(y + 2)(x) = black
+          }
+
+          //Square between pair
+          //Vertical
+          if (values(x)(y) == values(x)(y + 2)) {
+            newColors(x)(y + 1) = white
+          }
+          //Horizontal
+          if (values(y)(x) == values(y + 2)(x)) {
+            newColors(y + 1)(x) = white
+          }
+        }
+      }
+
+      if (size > 4) {
+
+        //Pair induction
+        for (x <- 0 until size) {
+          for (y <- 0 until size - 4) {
+            if (values(x)(y) == values(x)(y + 2) && values(x)(y) == values(x)(y + 3)) {
+              newColors(x)(y) = black
+            }
+            if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 3)) {
+              newColors(x)(y + 2) = black
+            }
+            if (values(y)(x) == values(y + 2)(x) && values(y)(x) == values(y + 3)(x)) {
+              newColors(y)(x) = black
+            }
+            if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 3)(x)) {
+              newColors(y + 2)(x) = black
+            }
+          }
+        }
+
+        //White around all blacks (all whites needs a friend)
+        for (x <- 0 until size) {
+          for (y <- 0 until size) {
+            if (newColors(x)(y) == black) {
+              if (x >= 0 && x < size - 1) {
+                newColors(x + 1)(y) = white
+              }
+              if (x > 0 && x < size) {
+                newColors(x - 1)(y) = white
+              }
+              if (y >= 0 && y < size - 1) {
+                newColors(x)(y + 1) = white
+              }
+              if (y > 0 && y < size) {
+                newColors(x)(y - 1) = white
+              }
+            }
+          }
+        }
+      }
+      //Corner rule
+      val end = size - 1
+      //Top left
+      if (values(0)(0) == values(1)(0) && values(0)(0) == values(0)(1)) {
+        newColors(0)(0) = black
+      }
+      //Top right
+      if (values(end)(0) == values(end)(1) && values(end)(0) == values(end - 1)(0)) {
+        newColors(end)(0) = black
+      }
+      //Bottom left
+      if (values(0)(end) == values(1)(end) && values(0)(end) == values(0)(end - 1)) {
+        newColors(0)(end) = black
+      }
+      //Bottom right
+      if (values(end)(end) == values(end)(end - 1) && values(end)(end) == values(end - 1)(end)) {
+        newColors(end)(end) = black
+      }
+    }
+    newColors
+  }
+
+  def functionalStarting(values:Array[Array[Int]]):Array[Array[Int]] = {
+    val size = values.length
+    var colors = Array.tabulate(size, size)((_,_) => -1)
+
+    val valuesFlipped = values.transpose
+
+    // Adjacent triplets
+
+    colors
   }
 
   def main(args: Array[String]): Unit = {
@@ -220,15 +359,17 @@ object HitoriSolver {
     val board = Array.ofDim[Int](5, 5)
 
     val puzzle = loadPuzzle(args(0))
-    val puzzleColors = Array.tabulate(5, 5)((x, y) => if (x == 3 && y == 0 || x == 0 && y == 4 || x == 4 && y == 1) 0 else 1)
+    //val puzzleColors = Array.tabulate(5, 5)((_,_) => -1)//((x, y) => if (x == 3 && y == 0 || x == 0 && y == 3 || x == 4 && y == 2) 0 else 1)
+
+    val puzzleColors = applyStartingTechniques(puzzle)
 
     printBoard(puzzle, "Initial puzzle")
 
     printBoard(puzzleColors, "Puzzle colors")
 
-    println("Flood fill: " + floodFillCheck(puzzleColors))
+    //println("Flood fill: " + floodFillCheck(puzzleColors))
 
-    println("Puzzle solved: " + isSolved(puzzle, puzzleColors))
+    println("Puzzle solved: " + isSolved(puzzle, puzzleColors, true))
 
     val size = board.length
 
@@ -238,110 +379,6 @@ object HitoriSolver {
 
     val white = 1
 
-    def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
-
-      //Gives cells a color based on their position relative to each other
-
-      //TODO Needs more starting techniques
-
-      val newColors = Array.ofDim[Int](size, size)
-
-      for (x <- 0 until size) {
-        for (y <- 0 until size) {
-          newColors(x)(y) = noColor
-        }
-      }
-
-      if (size > 3) {
-        for (x <- 0 until size) {
-          for (y <- 0 until size - 3) {
-            //Adjecent triples
-            //Vertical
-            if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 2)) {
-              newColors(x)(y) = black
-              newColors(x)(y + 1) = white
-              newColors(x)(y + 2) = black
-            }
-            //Horizontal
-            if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 2)(x)) {
-              newColors(y)(x) = black
-              newColors(y + 1)(x) = white
-              newColors(y + 2)(x) = black
-            }
-
-            //Square between pair
-            //Vertical
-            if (values(x)(y) == values(x)(y + 2)) {
-              newColors(x)(y + 1) = white
-            }
-            //Horizontal
-            if (values(y)(x) == values(y + 2)(x)) {
-              newColors(y + 1)(x) = white
-            }
-          }
-        }
-
-        if (size > 4) {
-
-          //Pair induction
-          for (x <- 0 until size) {
-            for (y <- 0 until size - 4) {
-              if (values(x)(y) == values(x)(y + 2) && values(x)(y) == values(x)(y + 3)) {
-                newColors(x)(y) = black
-              }
-              if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 3)) {
-                newColors(x)(y + 2) = black
-              }
-              if (values(y)(x) == values(y + 2)(x) && values(y)(x) == values(y + 3)(x)) {
-                newColors(y)(x) = black
-              }
-              if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 3)(x)) {
-                newColors(y + 2)(x) = black
-              }
-            }
-          }
-
-          //White around all blacks (all whites needs a friend)
-          for (x <- 0 until size) {
-            for (y <- 0 until size) {
-              if (newColors(x)(y) == black) {
-                if (x >= 0 && x < size - 1) {
-                  newColors(x + 1)(y) = white
-                }
-                if (x > 0 && x < size) {
-                  newColors(x - 1)(y) = white
-                }
-                if (y >= 0 && y < size - 1) {
-                  newColors(x)(y + 1) = white
-                }
-                if (y > 0 && y < size) {
-                  newColors(x)(y - 1) = white
-                }
-              }
-            }
-          }
-        }
-        //Corner rule
-        val end = size - 1
-        //Top left
-        if (values(0)(0) == values(1)(0) && values(0)(0) == values(0)(1)) {
-          newColors(0)(0) = black
-        }
-        //Top right
-        if (values(end)(0) == values(end)(1) && values(end)(0) == values(end - 1)(0)) {
-          newColors(end)(0) = black
-        }
-        //Bottom left
-        if (values(0)(end) == values(1)(end) && values(0)(end) == values(0)(end - 1)) {
-          newColors(0)(end) = black
-        }
-        //Bottom right
-        if (values(end)(end) == values(end)(end - 1) && values(end)(end) == values(end - 1)(end)) {
-          newColors(end)(end) = black
-        }
-      }
-      newColors
-    }
 
     val startingColors = applyStartingTechniques(board)
 
