@@ -374,10 +374,8 @@ object HitoriSolver {
     val size = values.length
     //Gives cells a color based on their position relative to each other
 
-    //TODO Needs more starting techniques
 
     val newColors = Array.ofDim[Int](size, size)
-
     for (x <- 0 until size) {
       for (y <- 0 until size) {
         newColors(x)(y) = noColor
@@ -386,20 +384,22 @@ object HitoriSolver {
 
     if (size > 3) {
       for (x <- 0 until size) {
-        for (y <- 0 until size - 3) {
+        for (y <- 0 until size - 2) {
           //Adjecent triples
+          if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 2)(x)) {
+            newColors(y)(x) = black
+            newColors(y + 1)(x) = white
+            newColors(y + 2)(x) = black
+          }
+
           //Vertical
           if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 2)) {
             newColors(x)(y) = black
             newColors(x)(y + 1) = white
             newColors(x)(y + 2) = black
           }
-          //Horizontal
-          if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 2)(x)) {
-            newColors(y)(x) = black
-            newColors(y + 1)(x) = white
-            newColors(y + 2)(x) = black
-          }
+
+
 
           //Square between pair
           //Vertical
@@ -417,18 +417,18 @@ object HitoriSolver {
 
         //Pair induction
         for (x <- 0 until size) {
-          for (y <- 0 until size - 4) {
+          for (y <- 0 until size - 3) {
             if (values(x)(y) == values(x)(y + 2) && values(x)(y) == values(x)(y + 3)) {
               newColors(x)(y) = black
             }
             if (values(x)(y) == values(x)(y + 1) && values(x)(y) == values(x)(y + 3)) {
-              newColors(x)(y + 2) = black
+              newColors(x)(y + 3) = black
             }
             if (values(y)(x) == values(y + 2)(x) && values(y)(x) == values(y + 3)(x)) {
               newColors(y)(x) = black
             }
             if (values(y)(x) == values(y + 1)(x) && values(y)(x) == values(y + 3)(x)) {
-              newColors(y + 2)(x) = black
+              newColors(y + 3)(x) = black
             }
           }
         }
@@ -472,6 +472,7 @@ object HitoriSolver {
         newColors(end)(end) = black
       }
     }
+    printBoard(newColors, "After StartTech puzzle")
     newColors
   }
 
