@@ -55,7 +55,7 @@ object HitoriSolver {
   // Goes through each row and column (arr) 2 tiles at a time, ensures that a pair never contains blacks only
   val containsNoAdjacent = (arr:Array[Int]) => arr.sliding(2).forall(containsNoBlacksOnly)
 
-  val incompletePuzzle = (colors:Array[Array[Int]]) => colors.exists(_.contains(-1))
+  val incompletePuzzle = (puzzle:Puzzle) => puzzle.colors.exists(_.contains(-1))
 
   val xIndex = (i:Int, size:Int) => i % size
   val yIndex = (i:Int, size:Int) => i / size    // Works because of integer division, alternative: (i - (i % size)) / size
@@ -72,17 +72,18 @@ object HitoriSolver {
     * - No adjacent black tiles
     * - All white tiles are interconnected
     *
-    * @param horizontalValues 2D array of puzzle values
-    * @param horizontalColors 2D array of puzzle colors
+    * @param puzzle 2D array of puzzle values and colors
     * @param log Flag for printing debug messages to the console
     * @return True if the puzzle is solved, false otherwise
     */
-  def isSolved(horizontalValues:Array[Array[Int]], horizontalColors:Array[Array[Int]], log:Boolean=false):Boolean = {
-    if (incompletePuzzle(horizontalColors)) {
+  def isSolved(puzzle:Puzzle, log:Boolean=false):Boolean = {
+    if (incompletePuzzle(puzzle)) {
       if (log) println("Incomplete puzzle! Aborting puzzle solved check")
       return false
     }
 
+    val horizontalValues = puzzle.values
+    val horizontalColors = puzzle.colors
     val verticalValues = horizontalValues.transpose
     val verticalColors = horizontalColors.transpose
 
@@ -103,7 +104,7 @@ object HitoriSolver {
     val adjacent = horizontalColors.forall(containsNoAdjacent) && verticalColors.forall(containsNoAdjacent)
 
     // Are all white tiles are interconnected?
-    val floodFill = floodFillCheck(horizontalColors)
+    val floodFill = floodFillCheck(puzzle)
 
     if (log) {
       println("All tile values unique: " + unique)
@@ -137,7 +138,7 @@ object HitoriSolver {
     val adjacent = horizontalColors.forall(containsNoAdjacent) && verticalColors.forall(containsNoAdjacent)
 
     // Are all white tiles are interconnected?
-    val floodFill = floodFillCheck(horizontalColors)
+    val floodFill = floodFillCheck(puzzle)
 
     if (log) {
       println("All tile values unique: " + unique)
@@ -151,12 +152,12 @@ object HitoriSolver {
   /**
     * Recursively check if a puzzle has interconnected white tiles, black tiles are ignored.
     *
-    * @param puzzleColors 2D array of tiles containing -1, 0, 1 color mappings
+    * @param puzzle 2D array of tiles containing -1, 0, 1 color mappings
     * @return True if the puzzle has interconnected white tiles, false otherwise
     */
-  def floodFillCheck(puzzleColors:Array[Array[Int]], log:Boolean=false):Boolean = {
-    val size = puzzleColors.length
-    val checked = for (tile <- puzzleColors.flatten) yield tile == 0
+  def floodFillCheck(puzzle:Puzzle, log:Boolean=false):Boolean = {
+    val size = puzzle.colors.length
+    val checked = for (tile <- puzzle.colors.flatten) yield tile == 0
 
     if (log) {
       println("Pre flood fill checked: " + checked.length)
@@ -164,8 +165,8 @@ object HitoriSolver {
       println("Pre flood fill blacks: " + checked.count(x => x))
     }
 
-    // Find the first white tile
-    val tile = checked.indexWhere(x => !x)
+    // Find the first non-black tile
+    val tile = checked.indexWhere(!_)
     val first = if (tile != -1) tile :: List[Int]() else List[Int]()
 
     @tailrec
@@ -180,46 +181,45 @@ object HitoriSolver {
           //println("Checked: " + index + " | isChecked: " + checkedTiles(index) + " | dir: " + dir)
 
           dir match {
-            case 0 => {
+            case 0 =>
               val up = index - size
               val next =
                 if (up > 0 && !checkedTiles(up))
                   up :: tail
                 else tail
               floodFill(checkedTiles, index :: next, dir + 1)
-            }
-            case 1 => {
+
+            case 1 =>
               val right = index + 1
               val next =
                 if (right % size > index % size &&
-                  right < checkedTiles.length &&
+                  right > 0 && // ?
                   right < checkedTiles.length &&
                   !checkedTiles(right))
                   right :: tail
                 else tail
               floodFill(checkedTiles, index :: next, dir + 1)
-            }
-            case 2 => {
+
+            case 2 =>
               val down = index + size
               val next =
                 if (down < checkedTiles.length && !checkedTiles(down))
                   down :: tail
                 else tail
               floodFill(checkedTiles, index :: next, dir + 1)
-            }
-            case 3 => {
+
+            case 3 =>
               val left = index - 1
               val next = if (left % size < index % size &&
                 left > 0 &&
-                left < checkedTiles.length &&
+                left < checkedTiles.length && // ?
                 !checkedTiles(left))
                 left :: tail
               else tail
               floodFill(checkedTiles, index :: next, dir + 1)
-            }
-            case _ => {
+
+            case _ =>
               floodFill(checkedTiles, tail, 0)
-            }
           }
         }
       }
@@ -228,39 +228,38 @@ object HitoriSolver {
     !floodFill(checked, first, 0).contains(false)
   }
 
-  def solve(start:Puzzle):Puzzle = {
+  def solve(values:Board):Puzzle = {
+    val startColors = applyStartingTechniques(values)
+    val result = Puzzle(values, applyRunningTechniques(values, startColors))
 
-    //@tailrec
+    println("Valid starting techniques: " + validMoves(result))
+
+    @tailrec
     def findSolution(puzzle:Puzzle):Boolean = {
-      if (isSolved(puzzle.values, puzzle.colors))
+      if (isSolved(puzzle))
         return true
+
+      val colors = applyRunningTechniques(puzzle.values, puzzle.colors)
 
       printBoard(puzzle.colors, "Intermediate solved puzzle")
 
       val size = puzzle.values.length
-      val index = puzzle.colors.flatten.indexWhere(_ == -1)
+      val index = colors.flatten.indexWhere(_ == -1)
 
       if (index == -1)
         return false
 
-      val w = puzzle
-      val b = puzzle
+      colors(yIndex(index, size))(xIndex(index, size)) = 0
 
-      b.colors(yIndex(index, size))(xIndex(index, size)) = 0
-      w.colors(yIndex(index, size))(xIndex(index, size)) = 1
+      if (!validMoves(Puzzle(puzzle.values, colors)))
+        colors(yIndex(index, size))(xIndex(index, size)) = 1
 
-      if (validMoves(b))
-        findSolution(b)
-
-      if (validMoves(w))
-        findSolution(w)
-
-      false
+      findSolution(Puzzle(puzzle.values, colors))
     }
 
-    findSolution(start)
+    findSolution(result)
 
-    start
+    result
   }
 
   def printArray(arr:Array[Array[Int]], headline:String=""):Unit = {
@@ -495,17 +494,17 @@ object HitoriSolver {
     println("B W W W W\nW B W B W\nW W W W B\nW W B W W \nB W W W B")
 
     printBoard(puzzleValues, "Initial puzzle")
-    printBoard(puzzleColors, "Puzzle colors")
+    //printBoard(puzzleColors, "Puzzle colors")
 
     //println("Flood fill: " + floodFillCheck(puzzleColors))
 
-    val solved = timedFunc{ solve(puzzle) }
+    val solved = timedFunc{ solve(puzzleValues) }
 
     println("Puzzle solved: ")
     printBoard(solved.values, "Solved puzzle values")
     printBoard(solved.colors, "Solved puzzle colors")
 
     // Run after solution found
-    savePuzzle(args(1), puzzleColors)
+    savePuzzle(args(1), solved.colors)
   }
 }
