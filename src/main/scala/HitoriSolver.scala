@@ -19,6 +19,14 @@ object HitoriSolver {
 
     var puzzle = new ArrayBuffer[Array[Int]]()
 
+    /*
+    val test = for {
+      line <- lines
+    } yield line.mkString.split("\\s")
+
+    test.foreach(x => println(x.mkString(" ")))
+    */
+
     for (line<-lines) {
       var row = new ArrayBuffer[Int]()
       line.mkString.split("\\s").foreach{ x => row += x.toInt}
@@ -31,7 +39,7 @@ object HitoriSolver {
   def savePuzzle(filePath:String, puzzle:Array[Array[Int]]):Unit = {
     val outputFile = new PrintWriter(new File(filePath))
 
-    for (row<-puzzle) {
+    for (row <- puzzle) {
       var line = new StringBuilder()
       row.foreach{x => line ++= wOrB(x)}
       outputFile.println(line)
@@ -58,10 +66,10 @@ object HitoriSolver {
   val incompletePuzzle = (puzzle:Puzzle) => puzzle.colors.exists(_.contains(-1))
 
   val xIndex = (i:Int, size:Int) => i % size
-  val yIndex = (i:Int, size:Int) => i / size    // Works because of integer division, alternative: (i - (i % size)) / size
+  val yIndex = (i:Int, size:Int) => i / size    //Alternative: (i - (i % size)) / size
   val index = (x:Int, y:Int, size:Int) => x + (y * size)
 
-  val wOrB = (x:Int) => (if (x == 0) "b " else "w ");
+  val wOrB = (x:Int) => if (x == 0) "b " else "w "
 
   /**
     * Checks if the puzzle is a valid solution. Requires puzzle as two 2D arrays, one for values and another for blacked
@@ -173,7 +181,7 @@ object HitoriSolver {
     def floodFill(checkedTiles:Array[Boolean], next:List[Int], dir:Int):Array[Boolean] = {
       next match {
         case Nil => checkedTiles
-        case head :: tail => {
+        case head :: tail =>
           val index = head
 
           checkedTiles(index) = true
@@ -221,18 +229,17 @@ object HitoriSolver {
             case _ =>
               floodFill(checkedTiles, tail, 0)
           }
-        }
       }
     }
 
     !floodFill(checked, first, 0).contains(false)
   }
 
-  def solve(values:Board):Puzzle = {
+  def solve(values:Board, log:Boolean=false):Puzzle = {
     val startColors = applyStartingTechniques(values)
     val result = Puzzle(values, applyRunningTechniques(values, startColors))
 
-    println("Valid starting techniques: " + validMoves(result))
+    if (log) println("Valid starting techniques: " + validMoves(result))
 
     @tailrec
     def findSolution(puzzle:Puzzle):Boolean = {
@@ -241,10 +248,10 @@ object HitoriSolver {
 
       val colors = applyRunningTechniques(puzzle.values, puzzle.colors)
 
-      printBoard(puzzle.colors, "Intermediate solved puzzle")
+      if (log) printPuzzle(puzzle, "Intermediate solved puzzle")
 
       val size = puzzle.values.length
-      val index = colors.flatten.indexWhere(_ == -1)
+      val index = colors.flatten.indexWhere(_ == -1) // TODO: Replace with Queue
 
       if (index == -1)
         return false
@@ -254,6 +261,7 @@ object HitoriSolver {
       if (!validMoves(Puzzle(puzzle.values, colors)))
         colors(yIndex(index, size))(xIndex(index, size)) = 1
 
+      // if false, backtrack
       findSolution(Puzzle(puzzle.values, colors))
     }
 
@@ -279,13 +287,25 @@ object HitoriSolver {
     }
   }
 
+  def printPuzzle(puzzle:Puzzle, headline:String=""):Unit = {
+    if (!headline.isEmpty)
+      println("-- " + headline + " --")
+
+    (puzzle.values, puzzle.colors).zipped.foreach{
+      (vs, cs) => (vs, cs).zipped.foreach{
+        (v, c) => print(v + wOrB(c))
+      }
+        println()
+    }
+    println()
+  }
+
   def printBoardBool(puzzle:Array[Array[Boolean]], headline:String=""):Unit = {
     if (!headline.isEmpty)
       println("-- " + headline + " --")
 
     for (line<-puzzle) {
       line.foreach(x => print(wOrB(if (x) 1 else 0)))
-      println("")
     }
   }
 
@@ -471,7 +491,7 @@ object HitoriSolver {
         newColors(end)(end) = black
       }
     }
-    printBoard(newColors, "After StartTech puzzle")
+    printArray(newColors, "After StartTech puzzle")
     newColors
   }
 
@@ -488,21 +508,19 @@ object HitoriSolver {
 
     val puzzleValues = loadPuzzle(args(0))
     val puzzleColors = Array.tabulate(5, 5)((_,_) => -1)//((x, y) => if (x == 3 && y == 0 || x == 0 && y == 4 || x == 4 && y == 2) 0 else -1)
-    //val puzzleColors = applyStartingTechniques(puzzle)
     val puzzle = Puzzle(puzzleValues, puzzleColors)
 
-    println("B W W W W\nW B W B W\nW W W W B\nW W B W W \nB W W W B")
+    println("Solution:\nB W W W W\nW B W B W\nW W W W B\nW W B W W \nB W W W B")
 
-    printBoard(puzzleValues, "Initial puzzle")
+    printArray(puzzleValues, "Initial puzzle")
     //printBoard(puzzleColors, "Puzzle colors")
 
-    //println("Flood fill: " + floodFillCheck(puzzleColors))
+    println("Flood fill: " + floodFillCheck(puzzle))
 
     val solved = timedFunc{ solve(puzzleValues) }
 
     println("Puzzle solved: ")
-    printBoard(solved.values, "Solved puzzle values")
-    printBoard(solved.colors, "Solved puzzle colors")
+    printPuzzle(solved, "Solved puzzle")
 
     // Run after solution found
     savePuzzle(args(1), solved.colors)
