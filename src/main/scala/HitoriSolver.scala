@@ -239,7 +239,16 @@ object HitoriSolver {
       if (isSolved(puzzle))
         return true
 
-      val colors = applyRunningTechniques(puzzle.values, puzzle.colors)
+      var colors1 = puzzle.colors
+      var colors2 = applyRunningTechniques(puzzle.values, colors1)
+      var runningDone = false;
+      while (!runningDone) {
+        colors1 = applyRunningTechniques(puzzle.values, colors2)
+        colors2 = applyRunningTechniques(puzzle.values, colors1)
+        if (colors1.sameElements(colors2)) runningDone = true
+      }
+
+      val colors = colors2
 
       printBoard(puzzle.colors, "Intermediate solved puzzle")
 
@@ -292,37 +301,60 @@ object HitoriSolver {
   def applyRunningTechniques (values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
     val size = values.length
 
-    // 2 equal neighbours with different colors
-    for (x <- 0 until size - 1) {
+    //White around all blacks (all whites needs a friend)
+    for (x <- 0 until size) {
       for (y <- 0 until size) {
-        // Vertical
-        if (values(x)(y) == values(x + 1)(y)) {
-          if (colors(x)(y) == black) {
+        if (colors(x)(y) == black) {
+          if (x >= 0 && x < size - 1) {
             colors(x + 1)(y) = white
           }
-          if (colors(x + 1)(y) == black) {
+          if (x > 0 && x < size) {
+            colors(x - 1)(y) = white
+          }
+          if (y >= 0 && y < size - 1) {
+            colors(x)(y + 1) = white
+          }
+          if (y > 0 && y < size) {
+            colors(x)(y - 1) = white
+          }
+        }
+      }
+    }
+
+    // 2 equal neighbours with different colors
+    for (x <- 0 until size) {
+      for (y <- 0 until size) {
+        val value = values(x)(y)
+        var valPosH = -1
+        var valPosV = -1
+        var valuesHor = 1
+        var valuesVer = 1
+       for (zh <- 0 until size) {
+         if (values(x)(y) == values(x)(zh) && zh != y) {
+           valuesHor = valuesHor + 1
+           valPosH = zh
+         }
+       }
+        for (zv <- 0 until size) {
+          if (values(x)(y) == values(zv)(y) && zv != x) {
+            valuesVer = valuesVer + 1
+            valPosV = zv
+          }
+        }
+        if (valuesHor == 2) {
+          if (colors(x)(valPosH) == black) {
             colors(x)(y) = white
           }
-          if (colors(x)(y) == white) {
-            colors(x + 1)(y) = black
-          }
-          if (colors(x + 1)(y) == white) {
+          if (colors(x)(valPosH) == white) {
             colors(x)(y) = black
           }
         }
-        // Horizontal
-        if (values(y)(x) == values(y)(x + 1)) {
-          if (colors(y)(x) == black) {
-            colors(y)(x + 1) = white
+        if (valuesVer == 2) {
+          if (colors(valPosV)(y) == black) {
+            colors(x)(y) = white
           }
-          if (colors(y)(x + 1) == black) {
-            colors(y)(x) = white
-          }
-          if (colors(y)(x) == white) {
-            colors(y)(x + 1) = black
-          }
-          if (colors(y)(x + 1) == white) {
-            colors(y)(x) = black
+          if (colors(valPosV)(y) == white) {
+            colors(x)(y) = black
           }
         }
       }
@@ -363,9 +395,6 @@ object HitoriSolver {
         }
       }
     }
-
-    // TODO 2-blacks-round-1-white-next-to-puzzle-border
-
     colors
   }
 
@@ -490,6 +519,8 @@ object HitoriSolver {
     val puzzleColors = Array.tabulate(5, 5)((_,_) => -1)//((x, y) => if (x == 3 && y == 0 || x == 0 && y == 4 || x == 4 && y == 2) 0 else -1)
     //val puzzleColors = applyStartingTechniques(puzzle)
     val puzzle = Puzzle(puzzleValues, puzzleColors)
+
+    val colors = applyStartingTechniques(puzzleValues)
 
     println("B W W W W\nW B W B W\nW W W W B\nW W B W W \nB W W W B")
 
