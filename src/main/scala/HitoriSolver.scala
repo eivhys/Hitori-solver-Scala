@@ -1,7 +1,7 @@
 import java.io.{File, PrintWriter}
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 
 object HitoriSolver {
@@ -45,7 +45,7 @@ object HitoriSolver {
       outputFile.println(line)
     }
 
-    outputFile.close
+    outputFile.close()
   }
 
   def timedFunc[T](block: => T):T = {
@@ -246,9 +246,20 @@ object HitoriSolver {
       if (isSolved(puzzle))
         return true
 
+      /*
+      var prevColors = puzzle.colors
+      var colors = applyRunningTechniques(puzzle.values, prevColors)
+
+      // Apply running techniques until there are no new changes
+      while (!prevColors.sameElements(colors)) {
+        prevColors = colors
+        colors = applyRunningTechniques(puzzle.values, prevColors)
+      }*/
+
+
       var colors1 = puzzle.colors
       var colors2 = applyRunningTechniques(puzzle.values, colors1)
-      var runningDone = false;
+      var runningDone = false
       while (!runningDone) {
         colors1 = applyRunningTechniques(puzzle.values, colors2)
         colors2 = applyRunningTechniques(puzzle.values, colors1)
@@ -257,10 +268,11 @@ object HitoriSolver {
 
       val colors = colors2
 
+
       if (log) printPuzzle(puzzle, "Intermediate solved puzzle")
 
       val size = puzzle.values.length
-      val index = colors.flatten.indexWhere(_ == -1) // TODO: Replace with Queue
+      val index = colors.flatten.indexWhere(_ == -1)
 
       if (index == -1)
         return false
@@ -270,7 +282,6 @@ object HitoriSolver {
       if (!validMoves(Puzzle(puzzle.values, colors)))
         colors(yIndex(index, size))(xIndex(index, size)) = 1
 
-      // if false, backtrack
       findSolution(Puzzle(puzzle.values, colors))
     }
 
@@ -318,67 +329,196 @@ object HitoriSolver {
     }
   }
 
-  def applyRunningTechniques (values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
+  def applyRunningTechniques (values:Array[Array[Int]], colors:Array[Array[Int]], log:Boolean=false): Array[Array[Int]] = {
     val size = values.length
 
-    //White around all blacks (all whites needs a friend)
-    for (x <- 0 until size) {
-      for (y <- 0 until size) {
-        if (colors(x)(y) == black) {
-          if (x >= 0 && x < size - 1) {
-            colors(x + 1)(y) = white
-          }
-          if (x > 0 && x < size) {
-            colors(x - 1)(y) = white
-          }
-          if (y >= 0 && y < size - 1) {
-            colors(x)(y + 1) = white
-          }
-          if (y > 0 && y < size) {
-            colors(x)(y - 1) = white
+    def wAroundB(values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
+      //White around all blacks (all whites needs a friend)
+      for (x <- 0 until size) {
+        for (y <- 0 until size) {
+          if (colors(x)(y) == black) {
+            if (x >= 0 && x < size - 1) {
+              colors(x + 1)(y) = white
+            }
+            if (x > 0 && x < size) {
+              colors(x - 1)(y) = white
+            }
+            if (y >= 0 && y < size - 1) {
+              colors(x)(y + 1) = white
+            }
+            if (y > 0 && y < size) {
+              colors(x)(y - 1) = white
+            }
           }
         }
       }
+      colors
     }
 
-    // 2 equal neighbours with different colors
-    for (x <- 0 until size) {
-      for (y <- 0 until size) {
-        val value = values(x)(y)
-        var valPosH = -1
-        var valPosV = -1
-        var valuesHor = 1
-        var valuesVer = 1
-       for (zh <- 0 until size) {
-         if (values(x)(y) == values(x)(zh) && zh != y) {
-           valuesHor = valuesHor + 1
-           valPosH = zh
-         }
-       }
-        for (zv <- 0 until size) {
-          if (values(x)(y) == values(zv)(y) && zv != x) {
-            valuesVer = valuesVer + 1
-            valPosV = zv
-          }
-        }
-        if (valuesHor == 2) {
-          if (colors(x)(valPosH) == black) {
-            colors(x)(y) = white
-          }
-          if (colors(x)(valPosH) == white) {
-            colors(x)(y) = black
-          }
-        }
-        if (valuesVer == 2) {
-          if (colors(valPosV)(y) == black) {
-            colors(x)(y) = white
-          }
-          if (colors(valPosV)(y) == white) {
-            colors(x)(y) = black
+    def sameValueDiffColor(values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
+      // 2 equal neighbours with different colors
+      for (number <- 1 until size + 1) {
+        var numlist = ListBuffer[Tuple2[Int,Int]]()
+        for (x <- 0 until size) {
+          numlist.clear()
+          for (y <- 0 until size) {
+            if (values(x)(y) == number) {
+              numlist += (Tuple2(x, y))
+            }
+            if (numlist.length > 2) {
+              for (e <- 0 until numlist.length) {
+                if (colors(numlist(e)._1)(numlist(e)._2) == white) {
+                  for (i <- 0 until numlist.length) {
+                    if (i != e) {
+                      var check = colors
+                      check(numlist(i)._1)(numlist(i)._2) = black
+                      if (validMoves(Puzzle(values, check))) {
+                        colors(numlist(i)._1)(numlist(i)._2) = black
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
+      for (number <- 1 until size + 1) {
+        var numlist = ListBuffer[Tuple2[Int,Int]]()
+        for (x <- 0 until size) {
+          numlist.clear()
+          for (y <- 0 until size) {
+            if (values(y)(x) == number) {
+              numlist += (Tuple2(y, x))
+            }
+            if (numlist.length > 2) {
+              for (e <- 0 until numlist.length) {
+                if (colors(numlist(e)._1)(numlist(e)._2) == white) {
+                  for (i <- 0 until numlist.length) {
+                    if (i != e) {
+                      var check = colors
+                      check(numlist(i)._1)(numlist(i)._2) = black
+                      if (validMoves(Puzzle(values, check))) {
+                        colors(numlist(i)._1)(numlist(i)._2) = black
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      colors
     }
+
+    def sameValueDiffColor2(values:Array[Array[Int]], colors:Array[Array[Int]]): Array[Array[Int]] = {
+      for (x <- 0 until size) {
+        for (y <- 0 until size) {
+          val value = values(x)(y)
+          var valPosH = -1
+          var valPosV = -1
+          var listPosH = new ListBuffer[Int]()
+          var listPosV = new ListBuffer[Int]()
+          var valuesHor = 1
+          var valuesVer = 1
+          for (zh <- 0 until size) {
+            if (values(x)(y) == values(x)(zh) && zh != y) {
+              valuesHor = valuesHor + 1
+              valPosH = zh
+              listPosH += (zh)
+            }
+          }
+          for (zv <- 0 until size) {
+            if (values(x)(y) == values(zv)(y) && zv != x) {
+              valuesVer = valuesVer + 1
+              valPosV = zv
+              listPosV += (zv)
+            }
+          }
+          if (valuesHor == 2) {
+            if (colors(x)(valPosH) == black) {
+              colors(x)(y) = white
+            }
+            if (colors(x)(valPosH) == white) {
+              colors(x)(y) = black
+            }
+          }
+          if (valuesVer == 2) {
+            if (colors(valPosV)(y) == black) {
+              colors(x)(y) = white
+            }
+            if (colors(valPosV)(y) == white) {
+              colors(x)(y) = black
+            }
+          }
+        }
+      }
+      colors
+    }
+
+    var colorsNew = colors
+
+    if (validMoves(Puzzle(values, wAroundB(values, colors)))) {
+      colorsNew = wAroundB(values, colors)
+    }
+    if (validMoves(Puzzle(values, sameValueDiffColor(values, colorsNew)))) {
+      colorsNew = sameValueDiffColor(values, colorsNew)
+    }
+    if (validMoves(Puzzle(values, sameValueDiffColor2(values, colorsNew)))) {
+      colorsNew = sameValueDiffColor(values, colorsNew)
+    }
+    if (validMoves(Puzzle(values, wAroundB(values, colors)))) {
+      colorsNew = wAroundB(values, colors)
+    }
+
+    val horizontalValues = values
+    val horizontalColors = colors
+    val verticalValues = horizontalValues.transpose
+    val verticalColors = horizontalColors.transpose
+
+    // Numbers present on line
+    val rowContent = for (row <- horizontalValues) yield row.distinct
+
+    // Create array with numbers and indices
+    val rowNumIndices = horizontalValues.flatten.zipWithIndex.grouped(size).toArray
+
+    val temp = for {
+      content <- rowContent
+      row <- rowNumIndices
+    } yield for {
+      num <- content
+      (n, i) <- row
+    } yield row.filter{ case(n, _) => n == num}
+
+    /*
+    println(temp)
+
+    temp.foreach {
+      _.foreach {
+        _.foreach{z => print(z)}
+        }
+    }*/
+
+    val testArr = Array(4, 3, 2, 2, 4, 5, 6, 6, 1, 2)
+    val un = testArr.distinct
+    // Separate list into smaller distinct lists [1, 1, 1, 2, 3, 3] => [[1,1,1], [2], [3,3]]
+    val tes = for (n <- un) yield testArr.filter(_ == n)
+
+
+    /*
+    // Search each row for content, act upon content length
+    val test = rowContent.foreach{ rowContent =>
+      for {
+        (v, i) <- horizontalValues.flatten.zipWithIndex
+      } yield v
+    }*/
+
+    // foreach row of content
+    // match (value, index)
+    // case (1, i) => Set to 1
+    // case (v, i) if v > 1 => If 1, set all other 0
+    // case (_, i) => Nothing
 
     // 3-black-round-1-white
     for (x <- 1 until size - 1) {
@@ -386,36 +526,38 @@ object HitoriSolver {
         var blacks = 0
         var whiteX = 0
         var whiteY = 0
-        if (colors(x + 1)(y) == black) {
+        if (colorsNew(x + 1)(y) == black) {
           blacks = blacks + 1
         } else {
           whiteX = x + 1
           whiteY = y
         }
-        if (colors(x - 1)(y) == black) {
+        if (colorsNew(x - 1)(y) == black) {
           blacks = blacks + 1
         } else {
           whiteX = x - 1
           whiteY = y
         }
-        if (colors(x)(y + 1) == black) {
+        if (colorsNew(x)(y + 1) == black) {
           blacks = blacks + 1
         } else {
           whiteX = x
           whiteY = y + 1
         }
-        if (colors(x)(y - 1) == black) {
+        if (colorsNew(x)(y - 1) == black) {
           blacks = blacks + 1
         } else {
           whiteX = x
           whiteY = y - 1
         }
         if (blacks >= 3) {
-          colors(whiteX)(whiteY) = white
+          colorsNew(whiteX)(whiteY) = white
         }
       }
     }
-    colors
+    if (log) println(validMoves(Puzzle(values,colorsNew)))
+
+    colorsNew
   }
 
   def applyStartingTechniques (values:Array[Array[Int]]): Array[Array[Int]] = {
@@ -525,21 +667,9 @@ object HitoriSolver {
   }
 
   def main(args: Array[String]): Unit = {
-
-    /*
-    * TODO Get board from file ✓
-    * TODO Apply starting techniques ✓
-    * TODO Check if solved ✓
-    * TODO Continuously apply techniques
-    * TODO Actually solve it (recursion with backtracking)
-    * TODO Save solution ✓
-    * */
-
     val puzzleValues = loadPuzzle(args(0))
     val puzzleColors = Array.tabulate(5, 5)((_,_) => -1)//((x, y) => if (x == 3 && y == 0 || x == 0 && y == 4 || x == 4 && y == 2) 0 else -1)
     val puzzle = Puzzle(puzzleValues, puzzleColors)
-
-    println("Solution:\nB W W W W\nW B W B W\nW W W W B\nW W B W W \nB W W W B")
 
     printArray(puzzleValues, "Initial puzzle")
     //printBoard(puzzleColors, "Puzzle colors")
@@ -547,6 +677,7 @@ object HitoriSolver {
     println("Flood fill: " + floodFillCheck(puzzle))
 
     val solved = timedFunc{ solve(puzzleValues) }
+    println("isSolved: " + isSolved(solved))
 
     println("Puzzle solved: ")
     printPuzzle(solved, "Solved puzzle")
